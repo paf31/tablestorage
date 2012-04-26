@@ -4,6 +4,8 @@
 
 module Network.TableStorage.Request where
 
+import Data.Time
+import System.Locale
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import Text.XML.Light.Types (elAttribs)
@@ -14,8 +16,6 @@ import Network.TableStorage.Atom
 import Network.TableStorage.Format
 import Network.HTTP.Base
 import Text.Printf (printf)
-import Data.Time.Format (formatTime)
-import Locale (defaultTimeLocale)
 
 -- |
 -- Formats a list of entity properties for inclusion in an Atom entry. 

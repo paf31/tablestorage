@@ -4,9 +4,8 @@
 
 module Network.TableStorage.Format where
 
-import Locale
-import Data.Time.Clock
-import Data.Time.Format
+import Data.Time
+import System.Locale
 
 getFormattedTime :: String -> IO String
 getFormattedTime formatString = fmap (formatTime defaultTimeLocale formatString) getCurrentTime

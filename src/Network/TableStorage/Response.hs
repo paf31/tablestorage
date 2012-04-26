@@ -4,6 +4,8 @@
 
 module Network.TableStorage.Response where
 
+import Data.Time
+import System.Locale
 import Text.XML.Light
 import Control.Monad (guard)
 import Data.Maybe (fromMaybe)
@@ -11,8 +13,6 @@ import Network.TableStorage.Atom
 import Network.TableStorage.Types
 import Network.TableStorage.Format
 import Network.HTTP.Base
-import Data.Time.Format (readTime)
-import Locale (defaultTimeLocale)
 
 -- |
 -- Extracts the error message from an error response 

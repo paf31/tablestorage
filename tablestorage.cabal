@@ -31,8 +31,8 @@ library
                    HTTP,
                    network,
                    time,
-                   haskell98,
-                   xml
+                   xml,
+                   old-locale
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,

@@ -143,7 +143,7 @@ readEntity entry = do
   elementToColumn el = 
     let propertyName = qName $ elName el in
     let typeAttr = fromMaybe "Edm.String" $ findAttr (qualifyMetadata "type") el in
-    let typeNull = fromMaybe False $ fmap ("true" ==) $ findAttr (qualifyMetadata "null") el in  
+    let typeNull = maybe False ("true" ==) $ findAttr (qualifyMetadata "null") el in  
     (\val -> (propertyName, val)) `fmap` parseEntityColumn typeNull typeAttr (strContent el)
 
 -- |
@@ -179,7 +179,6 @@ queryEntities acc tableName query = do
   let canonicalizedResource = printf "/%s/%s()" (accountName acc) tableName
   let queryString = buildQueryString query
   let resource = printf "%s?%s" canonicalizedResource queryString
-  print queryString
   response <- authenticatedRequest acc GET [] resource canonicalizedResource ""
   return $ response >>= parseQueryEntitiesResponse
   
