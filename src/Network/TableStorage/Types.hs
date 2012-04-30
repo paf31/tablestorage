@@ -25,10 +25,12 @@ type AuthHeader = String
 -- |
 -- Account information: host, port, secret key and account name 
 --
-data Account = Account { accountHost :: String,
-                         accountPort :: Int,
-                         accountKey  :: AccountKey,
-                         accountName :: String } deriving Show               
+data Account = Account { accountScheme         :: String,
+                         accountHost           :: String,
+                         accountPort           :: Int,
+                         accountKey            :: AccountKey,
+                         accountName           :: String,
+                         accountResourcePrefix :: String } deriving Show               
 
 -- |
 -- The unencrypted content of the Shared Key authorization header 

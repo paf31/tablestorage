@@ -66,14 +66,14 @@ authHeader acc auth = printf "%s %s:%s"
 --
 qualifyResource :: String -> Account -> URI
 qualifyResource res acc =
-  URI { uriScheme = "http",
+  URI { uriScheme = accountScheme acc,
         uriAuthority =  
           Just URIAuth { uriRegName = accountHost acc, 
                          uriPort = ':' : show (accountPort acc),
                          uriUserInfo = "" },
         uriQuery = "",
         uriFragment = "",
-        uriPath = res }
+        uriPath = (accountResourcePrefix acc) ++ res }
 
 -- |
 -- Creates and executes an authenticated request including the Authorization header.
@@ -90,7 +90,7 @@ authenticatedRequest acc method hdrs resource canonicalizedResource body = do
                              sharedKeyAuthContentMD5 = "",
                              sharedKeyAuthContentType = "application/atom+xml",
                              sharedKeyAuthDate = time,
-                             sharedKeyAuthCanonicalizedResource = '/' : accountName acc ++ canonicalizedResource }
+                             sharedKeyAuthCanonicalizedResource = printf "/%s%s%s" (accountName acc) (accountResourcePrefix acc) canonicalizedResource }
   let basicHeaders = [ Header HdrAuthorization (authHeader acc auth),
                        Header HdrContentType "application/atom+xml",
                        Header HdrContentLength (show $ length body),

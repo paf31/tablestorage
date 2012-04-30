@@ -13,3 +13,4 @@ module Network.TableStorage (module TableStorage) where
 import Network.TableStorage.Types as TableStorage
 import Network.TableStorage.API as TableStorage
 import Network.TableStorage.Development as TableStorage
+import Network.TableStorage.Query as TableStorage

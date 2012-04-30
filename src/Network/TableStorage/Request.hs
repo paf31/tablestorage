@@ -35,9 +35,8 @@ propertyList props =
 -- Constructs relative URIs which refer to the entity with the specified table name
 -- and entity key. 
 --
-entityKeyResource :: Account -> String -> EntityKey -> String
-entityKeyResource acc tableName key = printf "/%s/%s(PartitionKey='%s',RowKey='%s')" 
-  (accountName acc) 
+entityKeyResource :: String -> EntityKey -> String
+entityKeyResource tableName key = printf "%s(PartitionKey='%s',RowKey='%s')" 
   tableName 
   (ekPartitionKey key) 
   (ekRowKey key)

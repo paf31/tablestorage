@@ -24,6 +24,12 @@ parseError root = do
   return $ strContent message
 
 -- |
+-- Summarize an error appearing in a response body or return "Unknown error" if the response cannot be parsed
+--
+errorToString :: Response_String -> String
+errorToString res = fromMaybe "Unknown error" (parseXMLDoc (rspBody res) >>= parseError)
+
+-- |
 -- Verifies a response code, parsing an error message if necessary.
 --
 parseEmptyResponse :: ResponseCode -> Response_String -> Either String ()
@@ -32,7 +38,7 @@ parseEmptyResponse code res =
   then
     Right ()
   else
-    Left $ fromMaybe "Unknown error" (parseXMLDoc (rspBody res) >>= parseError)
+    Left $ errorToString res
 
 -- |
 -- Parse an XML response, or an error response as appropriate.

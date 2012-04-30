@@ -2,9 +2,10 @@
 -- This module provides functions wrapping the Azure REST API web methods.
 
 module Network.TableStorage.API (
-  queryTables, createTable, deleteTable,
+  queryTables, createTable, createTableIfNecessary, deleteTable,
   insertEntity, updateEntity, mergeEntity, deleteEntity, 
-  queryEntity, queryEntities, defaultEntityQuery
+  queryEntity, queryEntities, defaultEntityQuery,
+  defaultAccount
 ) where
 
 import Network.HTTP
@@ -38,7 +39,7 @@ parseQueryTablesResponse = parseXmlResponseOrError (2, 0, 0) readTables where
 --
 queryTables :: Account -> IO (Either String [String])
 queryTables acc = do
-  let resource = printf "/%s/Tables" $ accountName acc
+  let resource = "/Tables"
   response <- authenticatedRequest acc GET [] resource resource ""
   return $ response >>= parseQueryTablesResponse
 
@@ -53,17 +54,32 @@ createTableXml tableName = wrapContent $ propertyList [("TableName", EdmString $
 --
 createTable :: Account -> String -> IO (Either String ())
 createTable acc tableName = do 
-  let resource = printf "/%s/Tables" (accountName acc)
+  let resource = "/Tables"
   requestXml <- createTableXml tableName
   response <- authenticatedRequest acc POST [] resource resource $ showTopElement requestXml
   return $ response >>= parseEmptyResponse (2, 0, 1)
+
+-- |
+-- Creates a new table with the specified name if it does not already exist, or returns an erro message
+-- 
+createTableIfNecessary :: Account -> String -> IO (Either String ())
+createTableIfNecessary acc tableName = do 
+  tables <- queryTables acc
+  case tables of
+    Left err -> return $ Left err
+    Right tables' -> 
+      if any (== tableName) tables'
+      then
+        return $ Right ()
+      else 
+        createTable acc tableName
 
 -- |
 -- Deletes the table with the specified name or returns an error message
 --
 deleteTable :: Account -> String -> IO (Either String ())
 deleteTable acc tableName = do 
-  let resource = printf "/%s/Tables('%s')" (accountName acc) tableName
+  let resource = printf "/Tables('%s')" tableName
   response <- authenticatedRequest acc DELETE [] resource resource ""
   return $ response >>= parseEmptyResponse (2, 0, 4)
 
@@ -84,7 +100,7 @@ createInsertEntityXml entity = do
 --
 insertEntity :: Account -> String -> Entity -> IO (Either String ())
 insertEntity acc tableName entity = do 
-  let resource = printf "/%s/%s" (accountName acc) tableName
+  let resource = printf "/%s" tableName
   requestXml <- createInsertEntityXml entity
   response <- authenticatedRequest acc POST [] resource resource $ showTopElement requestXml
   return $ response >>= parseEmptyResponse (2, 0, 1)  
@@ -95,7 +111,7 @@ insertEntity acc tableName entity = do
 --
 updateOrMergeEntity :: RequestMethod -> Account -> String -> Entity -> IO (Either String ())
 updateOrMergeEntity method acc tableName entity = do 
-  let resource = entityKeyResource acc tableName $ entityKey entity
+  let resource = entityKeyResource tableName $ entityKey entity
   let additionalHeaders = [ Header (HdrCustom "If-Match") "*" ]
   requestXml <- createInsertEntityXml entity
   response <- authenticatedRequest acc method additionalHeaders resource resource $ showTopElement requestXml
@@ -118,7 +134,7 @@ mergeEntity = updateOrMergeEntity (Custom "MERGE")
 --
 deleteEntity :: Account -> String -> EntityKey -> IO (Either String ())
 deleteEntity acc tableName key = do 
-  let resource = entityKeyResource acc tableName key
+  let resource = entityKeyResource tableName key
   let additionalHeaders = [ Header (HdrCustom "If-Match") "*" ]
   response <- authenticatedRequest acc DELETE additionalHeaders resource resource ""
   return $ response >>= parseEmptyResponse (2, 0, 4)
@@ -157,7 +173,7 @@ parseQueryEntityResponse = parseXmlResponseOrError (2, 0, 0) readEntity where
 --
 queryEntity :: Account -> String -> EntityKey -> IO (Either String Entity)
 queryEntity acc tableName key = do 
-  let resource = entityKeyResource acc tableName key
+  let resource = entityKeyResource tableName key
   response <- authenticatedRequest acc GET [] resource resource ""
   return $ response >>= parseQueryEntityResponse
 
@@ -176,7 +192,7 @@ parseQueryEntitiesResponse = parseXmlResponseOrError (2, 0, 0) readEntities wher
 --
 queryEntities :: Account -> String -> EntityQuery -> IO (Either String [Entity])
 queryEntities acc tableName query = do 
-  let canonicalizedResource = printf "/%s/%s()" (accountName acc) tableName
+  let canonicalizedResource = printf "/%s()" tableName
   let queryString = buildQueryString query
   let resource = printf "%s?%s" canonicalizedResource queryString
   response <- authenticatedRequest acc GET [] resource canonicalizedResource ""
@@ -188,3 +204,13 @@ queryEntities acc tableName query = do
 defaultEntityQuery :: EntityQuery
 defaultEntityQuery = EntityQuery { eqPageSize = Nothing,
                                    eqFilter = Nothing }
+                                   
+-- | 
+-- Constructs an Account with the default values for Port and Resource Prefix
+defaultAccount :: AccountKey -> String -> String -> Account
+defaultAccount key name hostname = Account { accountScheme              = "http",
+                                             accountHost                = hostname,
+                                             accountPort                = 80,
+                                             accountKey                 = key,
+                                             accountName                = name,
+                                             accountResourcePrefix      = "" }
