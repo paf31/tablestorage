@@ -9,15 +9,41 @@ module Network.TableStorage.API (
 ) where
 
 import Network.HTTP
+    ( HeaderName(HdrCustom),
+      Header(Header),
+      RequestMethod(Custom, DELETE, GET, POST, PUT),
+      Response_String )
 import Text.XML.Light
-import Text.Printf
+    ( Element(elName),
+      QName(qName, qURI),
+      showTopElement,
+      filterChildren,
+      findAttr,
+      findChild,
+      findChildren,
+      strContent )
 import Network.TableStorage.Types
-import Network.TableStorage.Auth
+    ( EntityQuery(..),
+      Entity(..),
+      EntityColumn(EdmDateTime, EdmString),
+      EntityKey(..),
+      Account(..),
+      AccountKey )
+import Network.TableStorage.Auth ( authenticatedRequest )
 import Network.TableStorage.Request
+    ( propertyList, entityKeyResource, buildQueryString )
 import Network.TableStorage.Response
+    ( parseEmptyResponse, parseXmlResponseOrError, parseEntityColumn )
 import Network.TableStorage.Atom
-import Data.Time.Clock (getCurrentTime)
-import Data.Maybe (fromMaybe)
+    ( dataServicesNamespace,
+      qualifyAtom,
+      qualifyDataServices,
+      qualifyMetadata,
+      wrapContent )
+import Control.Monad ( (>=>), unless )
+import Control.Monad.Error ( ErrorT(..) )
+import Data.Time.Clock ( getCurrentTime )
+import Data.Maybe ( fromMaybe )
 
 -- |
 -- Parse the response body of the Query Tables web method
@@ -28,11 +54,11 @@ parseQueryTablesResponse = parseXmlResponseOrError (2, 0, 0) readTables where
   readTables feed = sequence $ do
     entry <- findChildren (qualifyAtom "entry") feed
     return $ readTableName entry
-  readTableName entry = do
-    content <- findChild (qualifyAtom "content") entry
-    properties <- findChild (qualifyMetadata "properties") content
-    tableName <- findChild (qualifyDataServices "TableName") properties
-    return $ strContent tableName
+  readTableName = 
+    findChild (qualifyAtom "content") 
+    >=> findChild (qualifyMetadata "properties") 
+    >=> findChild (qualifyDataServices "TableName") 
+    >=> return . strContent
 
 -- |
 -- List the names of tables for an account or returns an error message
@@ -63,23 +89,16 @@ createTable acc tableName = do
 -- Creates a new table with the specified name if it does not already exist, or returns an erro message
 -- 
 createTableIfNecessary :: Account -> String -> IO (Either String ())
-createTableIfNecessary acc tableName = do 
-  tables <- queryTables acc
-  case tables of
-    Left err -> return $ Left err
-    Right tables' -> 
-      if any (== tableName) tables'
-      then
-        return $ Right ()
-      else 
-        createTable acc tableName
+createTableIfNecessary acc tableName = runErrorT $ do 
+  tables <- ErrorT $ queryTables acc
+  unless (tableName `elem` tables) $ ErrorT $ createTable acc tableName
 
 -- |
 -- Deletes the table with the specified name or returns an error message
 --
 deleteTable :: Account -> String -> IO (Either String ())
 deleteTable acc tableName = do 
-  let resource = printf "/Tables('%s')" tableName
+  let resource = "/Tables('" ++ tableName ++ "')" 
   response <- authenticatedRequest acc DELETE [] resource resource ""
   return $ response >>= parseEmptyResponse (2, 0, 4)
 
@@ -100,7 +119,7 @@ createInsertEntityXml entity = do
 --
 insertEntity :: Account -> String -> Entity -> IO (Either String ())
 insertEntity acc tableName entity = do 
-  let resource = printf "/%s" tableName
+  let resource = '/' : tableName
   requestXml <- createInsertEntityXml entity
   response <- authenticatedRequest acc POST [] resource resource $ showTopElement requestXml
   return $ response >>= parseEmptyResponse (2, 0, 1)  
@@ -144,8 +163,10 @@ deleteEntity acc tableName key = do
 --
 readEntity :: Element -> Maybe Entity
 readEntity entry = do
-    content <- findChild (qualifyAtom "content") entry
-    properties <- findChild (qualifyMetadata "properties") content
+    properties <- 
+      findChild (qualifyAtom "content")
+      >=> findChild (qualifyMetadata "properties")
+      $ entry
     partitionKey <- findChild (qualifyDataServices "PartitionKey") properties
     rowKey <- findChild (qualifyDataServices "RowKey") properties
     let columnData = filterChildren filterProperties properties
@@ -192,9 +213,9 @@ parseQueryEntitiesResponse = parseXmlResponseOrError (2, 0, 0) readEntities wher
 --
 queryEntities :: Account -> String -> EntityQuery -> IO (Either String [Entity])
 queryEntities acc tableName query = do 
-  let canonicalizedResource = printf "/%s()" tableName
+  let canonicalizedResource = '/' : tableName ++ "()"
   let queryString = buildQueryString query
-  let resource = printf "%s?%s" canonicalizedResource queryString
+  let resource = canonicalizedResource ++ '?' : queryString
   response <- authenticatedRequest acc GET [] resource canonicalizedResource ""
   return $ response >>= parseQueryEntitiesResponse
   

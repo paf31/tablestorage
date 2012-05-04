@@ -3,11 +3,22 @@
 -- request and response bodies of the various web methods.
 --
 
-module Network.TableStorage.Atom where
+module Network.TableStorage.Atom (
+  atomNamespace, dataServicesNamespace, metadataNamespace,
+  qualifyAtom, qualifyDataServices, qualifyMetadata,
+  atomElement, atomAttr, wrapContent
+) where
 
 import Network.TableStorage.XML
-import Network.TableStorage.Format
+    ( qualify, cDataText, namespaceAttr )
+import Network.TableStorage.Format ( atomDate )
 import Text.XML.Light
+    ( Element(elAttribs, elContent, elName),
+      Content(Elem),
+      QName,
+      Attr(..),
+      blank_element,
+      unqual )
 
 atomNamespace :: String
 atomNamespace = "http://www.w3.org/2005/Atom"

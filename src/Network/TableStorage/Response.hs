@@ -2,17 +2,23 @@
 -- Helper methods for parsing web method response bodies. 
 --
 
-module Network.TableStorage.Response where
+module Network.TableStorage.Response (
+  parseError, errorToString,
+  parseEmptyResponse, parseXmlResponseOrError,
+  parseEntityColumn
+) where
 
-import Data.Time
-import System.Locale
+import Data.Time ( readTime )
+import System.Locale ( defaultTimeLocale )
 import Text.XML.Light
-import Control.Monad (guard)
-import Data.Maybe (fromMaybe)
-import Network.TableStorage.Atom
-import Network.TableStorage.Types
-import Network.TableStorage.Format
+    ( Element(elName), parseXMLDoc, findChild, strContent )
+import Control.Monad ( guard )
+import Data.Maybe ( fromMaybe )
+import Network.TableStorage.Atom ( qualifyMetadata )
+import Network.TableStorage.Types ( EntityColumn(..) )
+import Network.TableStorage.Format ( atomDateFormat )
 import Network.HTTP.Base
+    ( ResponseCode, Response(rspBody, rspCode), Response_String )
 
 -- |
 -- Extracts the error message from an error response 

@@ -2,20 +2,37 @@
 -- Helper methods used to construct requests.
 --
 
-module Network.TableStorage.Request where
+module Network.TableStorage.Request (
+  propertyList,
+  entityKeyResource,
+  columnToTypeString,
+  printEntityColumn,
+  printComparisonType,
+  buildFilterString,
+  buildQueryString
+) where
 
-import Data.Time
-import System.Locale
-import Data.Maybe (fromMaybe)
-import Data.List (intercalate)
-import Text.XML.Light.Types (elAttribs)
+import Data.Time ( formatTime )
+import System.Locale ( defaultTimeLocale )
+import Data.Maybe ( fromMaybe )
+import Data.List ( intercalate )
+import Text.XML.Light.Types ( elAttribs )
 import Text.XML.Light
+    ( Element(elAttribs, elContent, elName),
+      Content(Elem),
+      Attr(Attr),
+      blank_element )
 import Network.TableStorage.Types
-import Network.TableStorage.XML
+    ( EntityFilter(..),
+      ComparisonType(..),
+      EntityQuery(eqFilter, eqPageSize),
+      EntityColumn(..),
+      EntityKey(ekPartitionKey, ekRowKey) )
+import Network.TableStorage.XML ( cDataText )
 import Network.TableStorage.Atom
-import Network.TableStorage.Format
-import Network.HTTP.Base
-import Text.Printf (printf)
+    ( qualifyDataServices, qualifyMetadata )
+import Network.TableStorage.Format ( atomDateFormat )
+import Network.HTTP.Base ( urlEncode )
 
 -- |
 -- Formats a list of entity properties for inclusion in an Atom entry. 
@@ -36,10 +53,7 @@ propertyList props =
 -- and entity key. 
 --
 entityKeyResource :: String -> EntityKey -> String
-entityKeyResource tableName key = printf "%s(PartitionKey='%s',RowKey='%s')" 
-  tableName 
-  (ekPartitionKey key) 
-  (ekRowKey key)
+entityKeyResource tableName key = tableName ++ "(PartitionKey='" ++ ekPartitionKey key ++ "',RowKey='" ++ ekRowKey key ++ "')"
 
 -- |
 -- Converts an entity column into its type name
@@ -62,13 +76,16 @@ printEntityColumn (EdmBinary (Just val))       = Just val
 printEntityColumn (EdmBoolean (Just True))     = Just "true"
 printEntityColumn (EdmBoolean (Just False))    = Just "false"
 printEntityColumn (EdmDateTime (Just val))     = Just $ formatTime defaultTimeLocale atomDateFormat val
-printEntityColumn (EdmDouble (Just val))       = Just $ printf "%f" val
+printEntityColumn (EdmDouble (Just val))       = Just $ show val
 printEntityColumn (EdmGuid (Just val))         = Just val
-printEntityColumn (EdmInt32 (Just val))        = Just $ printf "%d" val
-printEntityColumn (EdmInt64 (Just val))        = Just $ printf "%d" val
+printEntityColumn (EdmInt32 (Just val))        = Just $ show val
+printEntityColumn (EdmInt64 (Just val))        = Just $ show val
 printEntityColumn (EdmString (Just val))       = Just val
 printEntityColumn _                            = Nothing
 
+-- |
+-- Formats a comparison type to appear in the query string
+--
 printComparisonType :: ComparisonType -> String
 printComparisonType Equal               = "eq"
 printComparisonType GreaterThan         = "gt"
@@ -82,21 +99,60 @@ printComparisonType NotEqual            = "ne"
 -- portion of the Query Entities URI. 
 --
 buildFilterString :: EntityFilter -> String
-buildFilterString (And fs) = printf "(%s)" $ intercalate "%%20and%%20" $ map buildFilterString fs
-buildFilterString (Or fs) = printf "(%s)" $ intercalate "%%20or%%20" $ map buildFilterString fs
-buildFilterString (Not f) = "(not%%20" ++ buildFilterString f ++ ")"
-buildFilterString (CompareBoolean prop val) = printf "%s%%20eq%%20%s" (urlEncode prop) (if val then "true" else "false")
-buildFilterString (CompareDateTime prop cmp val) = printf "%s%%20%s%%20datetime'%s'" (urlEncode prop) (printComparisonType cmp) (formatTime defaultTimeLocale atomDateFormat val)
-buildFilterString (CompareDouble prop cmp val) = printf "%s%%20%s%%20%f" (urlEncode prop) (printComparisonType cmp) val
-buildFilterString (CompareGuid prop val) = printf "%s%%20eq%%20guid'%s'" (urlEncode prop) val
-buildFilterString (CompareInt32 prop cmp val) = printf "%s%%20%s%%20%d" (urlEncode prop) (printComparisonType cmp) val
-buildFilterString (CompareInt64 prop cmp val) = printf "%s%%20%s%%20%d" (urlEncode prop) (printComparisonType cmp) val
-buildFilterString (CompareString prop cmp val) = printf "%s%%20%s%%20'%s'" (urlEncode prop) (printComparisonType cmp) (urlEncode val)
+buildFilterString (And fs) = '(' : intercalate "%20and%20" (map buildFilterString fs) ++ ")"
+buildFilterString (Or fs) = '(' : intercalate "%20or%20" (map buildFilterString fs) ++ ")"
+buildFilterString (Not f) = 
+  "(not%20" 
+  ++ buildFilterString f 
+  ++ ")"
+buildFilterString (CompareBoolean prop val) = 
+  urlEncode prop 
+  ++ "%20eq%20" 
+  ++ if val then "true" else "false"
+buildFilterString (CompareDateTime prop cmp val) = 
+  urlEncode prop 
+  ++ "%20"
+  ++ printComparisonType cmp 
+  ++ "%20datetime'" 
+  ++ formatTime defaultTimeLocale atomDateFormat val 
+  ++ "'"
+buildFilterString (CompareDouble prop cmp val) = 
+  urlEncode prop
+  ++ "%20" 
+  ++ printComparisonType cmp 
+  ++ "%20" 
+  ++ show val
+buildFilterString (CompareGuid prop val) = 
+  urlEncode prop 
+  ++ "%20eq%20guid'" 
+  ++ val
+  ++ "'"
+buildFilterString (CompareInt32 prop cmp val) = 
+  urlEncode prop 
+  ++ "%20" 
+  ++ printComparisonType cmp 
+  ++ "%20" 
+  ++ show val
+buildFilterString (CompareInt64 prop cmp val) = 
+  urlEncode prop 
+  ++ "%20" 
+  ++ printComparisonType cmp 
+  ++ "%20" 
+  ++ show val
+buildFilterString (CompareString prop cmp val) = 
+  urlEncode prop 
+  ++ "%20" 
+  ++ printComparisonType cmp
+  ++ "%20'" 
+  ++ urlEncode val 
+  ++ "'"
 
 -- |
 -- Constructs the full query string for the Query Entities web method. 
 --
 buildQueryString :: EntityQuery -> String
-buildQueryString query = printf "$filter=%s&$top=%s"
-  (maybe "" buildFilterString $ eqFilter query)
-  (maybe "" show $ eqPageSize query)
+buildQueryString query = 
+  "$filter="
+  ++ maybe "" buildFilterString (eqFilter query) 
+  ++ "&$top=" 
+  ++ maybe "" show (eqPageSize query)  

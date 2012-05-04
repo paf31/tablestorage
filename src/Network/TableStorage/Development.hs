@@ -2,9 +2,12 @@
 -- This module contains constants for working with the storage emulator.  
 --
 
-module Network.TableStorage.Development where
+module Network.TableStorage.Development (
+  developmentAccount
+) where
 
 import Network.TableStorage.Types
+    ( Account(..), AccountKey(AccountKey) )
 
 -- |
 -- An account for the storage emulator
@@ -15,4 +18,4 @@ developmentAccount = Account { accountScheme            = "http",
                                accountName              = "devstoreaccount1",
                                accountPort              = 10002,
                                accountResourcePrefix    = "/devstoreaccount1",
-                               accountKey               = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="}
+                               accountKey               = AccountKey "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="}

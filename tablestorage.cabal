@@ -1,5 +1,5 @@
 name:           tablestorage
-version:        0.1.0.2
+version:        0.1.0.3
 cabal-version:  >= 1.2
 build-type:     Simple
 author:         Phil Freeman <paf31-at-cantab.net>
@@ -32,7 +32,8 @@ library
                    network,
                    time,
                    xml,
-                   old-locale
+                   old-locale,
+                   mtl
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,

@@ -1,51 +1,68 @@
 -- |
 -- Data types used to construct the various web method requests. 
 --
+module Network.TableStorage.Types (
+  AccountKey(..),
+  Signature(..),
+  AuthHeader(..),
+  Account(..),
+  SharedKeyAuth(..),
+  EntityKey(..),
+  EntityColumn(..),
+  Entity(..),
+  EntityQuery(..),
+  ComparisonType(..),
+  EntityFilter(..)
+) where
 
-module Network.TableStorage.Types where
-
-import Data.Time
-import Network.HTTP.Base
+import Data.Time ( UTCTime )
+import Network.HTTP.Base ( RequestMethod )
 
 -- |
 -- The Base-64 encoded account secret key
 --
-type AccountKey = String
+newtype AccountKey = AccountKey { unAccountKey :: String } deriving (Show, Eq)
 
 -- |
 -- The type of authorization header signatures 
 --
-type Signature = String
+newtype Signature = Signature { unSignature :: String } deriving (Show, Eq)
 
 -- |
 -- The type of authorization headers 
 --
-type AuthHeader = String
+newtype AuthHeader = AuthHeader { unAuthHeader :: String } deriving (Show, Eq)
 
 -- |
 -- Account information: host, port, secret key and account name 
 --
-data Account = Account { accountScheme         :: String,
-                         accountHost           :: String,
-                         accountPort           :: Int,
-                         accountKey            :: AccountKey,
-                         accountName           :: String,
-                         accountResourcePrefix :: String } deriving Show               
+data Account = Account 
+  { accountScheme         :: String
+  , accountHost           :: String
+  , accountPort           :: Int
+  , accountKey            :: AccountKey
+  , accountName           :: String
+  , accountResourcePrefix :: String 
+  } deriving (Show, Eq)
 
 -- |
 -- The unencrypted content of the Shared Key authorization header 
 --
-data SharedKeyAuth = SharedKeyAuth { sharedKeyAuthVerb                  :: RequestMethod,
-                                     sharedKeyAuthContentMD5            :: String,
-                                     sharedKeyAuthContentType           :: String,
-                                     sharedKeyAuthDate                  :: String,
-                                     sharedKeyAuthCanonicalizedResource :: String } deriving Show
+data SharedKeyAuth = SharedKeyAuth 
+  { sharedKeyAuthVerb                  :: RequestMethod
+  , sharedKeyAuthContentMD5            :: String
+  , sharedKeyAuthContentType           :: String
+  , sharedKeyAuthDate                  :: String
+  , sharedKeyAuthCanonicalizedResource :: String
+  } deriving (Show, Eq)
 
 -- |
 -- Uniquely identifies an entity in a table : a partition key and row key pair. 
 --
-data EntityKey = EntityKey { ekPartitionKey :: String,
-                             ekRowKey       :: String } deriving Show
+data EntityKey = EntityKey 
+  { ekPartitionKey :: String
+  , ekRowKey       :: String 
+  } deriving (Show, Eq)
 
 -- |
 -- Represents a column in an entity.
@@ -63,7 +80,7 @@ data EntityColumn =
   EdmInt32 (Maybe Int) |
   EdmInt64 (Maybe Int) |
   EdmString (Maybe String)
-  deriving Show
+  deriving (Show, Eq)
 
 -- |
 -- An entity consists of a key and zero or more additional columns.
@@ -76,8 +93,10 @@ data Entity = Entity { entityKey     :: EntityKey,
 --
 -- Projections are not currently supported. 
 --
-data EntityQuery = EntityQuery { eqPageSize :: Maybe Int,
-                                 eqFilter   :: Maybe EntityFilter } deriving Show
+data EntityQuery = EntityQuery 
+  { eqPageSize :: Maybe Int
+  , eqFilter   :: Maybe EntityFilter 
+  } deriving (Show, Eq)
                                  
 -- |
 -- The various comparisons supported in entity queries. 
@@ -89,7 +108,7 @@ data ComparisonType =
   LessThan |
   LessThanOrEqual | 
   NotEqual 
-  deriving Show
+  deriving (Show, Eq)
                                  
 -- |
 -- The data type of entity filters 
@@ -105,4 +124,4 @@ data EntityFilter =
   CompareInt32 String ComparisonType Integer |
   CompareInt64 String ComparisonType Integer |
   CompareString String ComparisonType String
-  deriving Show
+  deriving (Show, Eq)

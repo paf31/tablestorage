@@ -2,9 +2,16 @@
 -- Helper methods for working with XML 
 --
 
-module Network.TableStorage.XML where
+module Network.TableStorage.XML (
+  qualify, cDataText, namespaceAttr
+) where
 
 import Text.XML.Light.Types
+    ( Content(Text),
+      CDataKind(CDataText),
+      CData(CData, cdData, cdLine, cdVerbatim),
+      QName(..),
+      Attr(..) )
 
 -- |
 -- Qualify a name for a specific namespace and/or prefix 

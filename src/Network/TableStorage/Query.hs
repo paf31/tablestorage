@@ -1,10 +1,16 @@
 -- |
 -- This module contains functions which help when unmarshalling query responses
 
-module Network.TableStorage.Query where
+module Network.TableStorage.Query (
+  edmBinary, edmBoolean, edmDateTime, edmDouble,
+  edmGuid, edmInt32, edmInt64, edmString
+) where
 
-import Data.Time
+import Data.Time ( UTCTime )
 import Network.TableStorage.Types
+    ( Entity(entityColumns),
+      EntityColumn(EdmBinary, EdmBoolean, EdmDateTime, EdmDouble,
+                   EdmGuid, EdmInt32, EdmInt64, EdmString) )
 
 -- |
 -- Find the value in a binary-valued column or return Nothing if no such column exists

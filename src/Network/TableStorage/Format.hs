@@ -2,10 +2,13 @@
 -- Helper methods for working with formatted dates
 --
 
-module Network.TableStorage.Format where
+module Network.TableStorage.Format (
+  getFormattedTime, rfc1123Date, atomDate,  
+  rfc1123Format, atomDateFormat
+) where
 
-import Data.Time
-import System.Locale
+import Data.Time ( getCurrentTime, formatTime )
+import System.Locale ( defaultTimeLocale )
 
 getFormattedTime :: String -> IO String
 getFormattedTime formatString = fmap (formatTime defaultTimeLocale formatString) getCurrentTime
