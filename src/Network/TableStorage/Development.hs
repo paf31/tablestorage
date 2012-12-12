@@ -1,5 +1,5 @@
 -- |
--- This module contains constants for working with the storage emulator.  
+-- This module contains constants for working with the storage emulator.
 --
 
 module Network.TableStorage.Development (

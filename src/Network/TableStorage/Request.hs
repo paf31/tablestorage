@@ -35,25 +35,25 @@ import Network.TableStorage.Format ( atomDateFormat )
 import Network.HTTP.Base ( urlEncode )
 
 -- |
--- Formats a list of entity properties for inclusion in an Atom entry. 
+-- Formats a list of entity properties for inclusion in an Atom entry.
 --
 propertyList :: [(String, EntityColumn)] -> Element
-propertyList props = 
+propertyList props =
   blank_element { elName = qualifyMetadata "properties",
                   elContent = map property props } where
   property (key, value) =
     let stringValue = printEntityColumn value in
     Elem blank_element { elName = qualifyDataServices key,
-                         elAttribs = [ Attr (qualifyMetadata "type") $ columnToTypeString value, 
+                         elAttribs = [ Attr (qualifyMetadata "type") $ columnToTypeString value,
                                        Attr (qualifyMetadata "null") $ maybe "true" (const "false") stringValue ],
                          elContent = cDataText $ fromMaybe "" stringValue }
 
 -- |
 -- Constructs relative URIs which refer to the entity with the specified table name
--- and entity key. 
+-- and entity key.
 --
 entityKeyResource :: String -> EntityKey -> String
-entityKeyResource tableName key = tableName ++ "(PartitionKey='" ++ ekPartitionKey key ++ "',RowKey='" ++ ekRowKey key ++ "')"
+entityKeyResource tableName key = "/" ++ tableName ++ "(PartitionKey='" ++ ekPartitionKey key ++ "',RowKey='" ++ ekRowKey key ++ "')"
 
 -- |
 -- Converts an entity column into its type name
@@ -89,70 +89,70 @@ printEntityColumn _                            = Nothing
 printComparisonType :: ComparisonType -> String
 printComparisonType Equal               = "eq"
 printComparisonType GreaterThan         = "gt"
-printComparisonType GreaterThanOrEqual  = "ge" 
+printComparisonType GreaterThanOrEqual  = "ge"
 printComparisonType LessThan            = "lt"
-printComparisonType LessThanOrEqual     = "le" 
+printComparisonType LessThanOrEqual     = "le"
 printComparisonType NotEqual            = "ne"
 
 -- |
 -- Converts entity filter values into strings to appear in the filter
--- portion of the Query Entities URI. 
+-- portion of the Query Entities URI.
 --
 buildFilterString :: EntityFilter -> String
 buildFilterString (And fs) = '(' : intercalate "%20and%20" (map buildFilterString fs) ++ ")"
 buildFilterString (Or fs) = '(' : intercalate "%20or%20" (map buildFilterString fs) ++ ")"
-buildFilterString (Not f) = 
-  "(not%20" 
-  ++ buildFilterString f 
+buildFilterString (Not f) =
+  "(not%20"
+  ++ buildFilterString f
   ++ ")"
-buildFilterString (CompareBoolean prop val) = 
-  urlEncode prop 
-  ++ "%20eq%20" 
-  ++ if val then "true" else "false"
-buildFilterString (CompareDateTime prop cmp val) = 
-  urlEncode prop 
-  ++ "%20"
-  ++ printComparisonType cmp 
-  ++ "%20datetime'" 
-  ++ formatTime defaultTimeLocale atomDateFormat val 
-  ++ "'"
-buildFilterString (CompareDouble prop cmp val) = 
+buildFilterString (CompareBoolean prop val) =
   urlEncode prop
-  ++ "%20" 
-  ++ printComparisonType cmp 
-  ++ "%20" 
+  ++ "%20eq%20"
+  ++ if val then "true" else "false"
+buildFilterString (CompareDateTime prop cmp val) =
+  urlEncode prop
+  ++ "%20"
+  ++ printComparisonType cmp
+  ++ "%20datetime'"
+  ++ formatTime defaultTimeLocale atomDateFormat val
+  ++ "'"
+buildFilterString (CompareDouble prop cmp val) =
+  urlEncode prop
+  ++ "%20"
+  ++ printComparisonType cmp
+  ++ "%20"
   ++ show val
-buildFilterString (CompareGuid prop val) = 
-  urlEncode prop 
-  ++ "%20eq%20guid'" 
+buildFilterString (CompareGuid prop val) =
+  urlEncode prop
+  ++ "%20eq%20guid'"
   ++ val
   ++ "'"
-buildFilterString (CompareInt32 prop cmp val) = 
-  urlEncode prop 
-  ++ "%20" 
-  ++ printComparisonType cmp 
-  ++ "%20" 
-  ++ show val
-buildFilterString (CompareInt64 prop cmp val) = 
-  urlEncode prop 
-  ++ "%20" 
-  ++ printComparisonType cmp 
-  ++ "%20" 
-  ++ show val
-buildFilterString (CompareString prop cmp val) = 
-  urlEncode prop 
-  ++ "%20" 
+buildFilterString (CompareInt32 prop cmp val) =
+  urlEncode prop
+  ++ "%20"
   ++ printComparisonType cmp
-  ++ "%20'" 
-  ++ urlEncode val 
+  ++ "%20"
+  ++ show val
+buildFilterString (CompareInt64 prop cmp val) =
+  urlEncode prop
+  ++ "%20"
+  ++ printComparisonType cmp
+  ++ "%20"
+  ++ show val
+buildFilterString (CompareString prop cmp val) =
+  urlEncode prop
+  ++ "%20"
+  ++ printComparisonType cmp
+  ++ "%20'"
+  ++ urlEncode val
   ++ "'"
 
 -- |
--- Constructs the full query string for the Query Entities web method. 
+-- Constructs the full query string for the Query Entities web method.
 --
 buildQueryString :: EntityQuery -> String
-buildQueryString query = 
+buildQueryString query =
   "$filter="
-  ++ maybe "" buildFilterString (eqFilter query) 
-  ++ "&$top=" 
-  ++ maybe "" show (eqPageSize query)  
+  ++ maybe "" buildFilterString (eqFilter query)
+  ++ "&$top="
+  ++ maybe "" show (eqPageSize query)

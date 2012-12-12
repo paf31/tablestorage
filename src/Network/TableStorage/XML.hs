@@ -1,5 +1,5 @@
 -- |
--- Helper methods for working with XML 
+-- Helper methods for working with XML
 --
 
 module Network.TableStorage.XML (
@@ -14,10 +14,10 @@ import Text.XML.Light.Types
       Attr(..) )
 
 -- |
--- Qualify a name for a specific namespace and/or prefix 
+-- Qualify a name for a specific namespace and/or prefix
 --
 qualify :: Maybe String -> Maybe String -> String -> QName
-qualify namespace prefix name = 
+qualify namespace prefix name =
   QName { qName = name,
           qURI = namespace,
           qPrefix = prefix }
@@ -29,7 +29,7 @@ cDataText :: String -> [Content]
 cDataText content = [ Text CData { cdVerbatim = CDataText, cdData = content, cdLine = Nothing } ]
 
 -- |
--- Constructs an xmlns attribute to be added to the document root  
+-- Constructs an xmlns attribute to be added to the document root
 --
 namespaceAttr :: String -> String -> Attr
 namespaceAttr prefix uri =
