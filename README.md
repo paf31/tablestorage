@@ -1,5 +1,5 @@
-tablestorage-0.2
-================
+tablestorage-0.1.2
+==================
 
 A Haskell wrapper for the Azure Table Storage REST API.
 
