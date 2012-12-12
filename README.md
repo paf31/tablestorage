@@ -8,5 +8,6 @@ Currently supports table and entity operations, but not pagination and projectio
 Version History
 ===============
 
-0.2 - Changes by Aaron Friel to support HTTPs and make the request body consistent with the .NET implementation
-0.1 - Initial version
+0.1.2 - Aaron Friel: HTTPS support, request format now consistent with the .NET implementation
+0.1.1 - Updated error handling mechanism, tidied exports
+0.1.0 - Initial version
