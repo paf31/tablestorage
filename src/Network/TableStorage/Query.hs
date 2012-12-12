@@ -20,7 +20,7 @@ edmBinary key en = do
   case col of
     EdmBinary s -> s
     _ -> Nothing
-    
+
 -- |
 -- Find the value in a string-valued column or return Nothing if no such column exists
 edmString :: String -> Entity -> Maybe String

@@ -1,9 +1,9 @@
 -- |
--- Helper methods for parsing web method response bodies. 
+-- Helper methods for parsing web method response bodies.
 --
 
 module Network.TableStorage.Response (
-  parseError, errorToString,
+  parseError,
   parseEmptyResponse, parseXmlResponseOrError,
   parseEntityColumn
 ) where
@@ -14,14 +14,13 @@ import Text.XML.Light
     ( Element(elName), parseXMLDoc, findChild, strContent )
 import Control.Monad ( guard )
 import Data.Maybe ( fromMaybe )
-import Network.TableStorage.Atom ( qualifyMetadata )
-import Network.TableStorage.Types ( EntityColumn(..) )
-import Network.TableStorage.Format ( atomDateFormat )
-import Network.HTTP.Base
-    ( ResponseCode, Response(rspBody, rspCode), Response_String )
+import Network.TableStorage.Atom
+import Network.TableStorage.Types
+import Network.TableStorage.Format
+import Network.HTTP.Types
 
 -- |
--- Extracts the error message from an error response 
+-- Extracts the error message from an error response
 --
 parseError :: Element -> Maybe String
 parseError root = do
@@ -30,29 +29,23 @@ parseError root = do
   return $ strContent message
 
 -- |
--- Summarize an error appearing in a response body or return "Unknown error" if the response cannot be parsed
+-- Verifies a response status, parsing an error message if necessary.
 --
-errorToString :: Response_String -> String
-errorToString res = fromMaybe "Unknown error" (parseXMLDoc (rspBody res) >>= parseError)
-
--- |
--- Verifies a response code, parsing an error message if necessary.
---
-parseEmptyResponse :: ResponseCode -> Response_String -> Either String ()
-parseEmptyResponse code res = 
-  if rspCode res == code 
+parseEmptyResponse :: Status -> QueryResponse -> Either String ()
+parseEmptyResponse status (QueryResponse rspStatus rspBody) =
+  if rspStatus == status
   then
     Right ()
   else
-    Left $ errorToString res
+    Left $ fromMaybe "Unknown error" (parseXMLDoc (rspBody) >>= parseError)
 
 -- |
 -- Parse an XML response, or an error response as appropriate.
 --
-parseXmlResponseOrError :: ResponseCode -> (Element -> Maybe a) -> Response_String -> Either String a
-parseXmlResponseOrError code parse res = 
-  let xmlDoc = parseXMLDoc (rspBody res) in
-  if rspCode res == code 
+parseXmlResponseOrError :: Status -> (Element -> Maybe a) -> QueryResponse -> Either String a
+parseXmlResponseOrError status parse (QueryResponse rspStatus rspBody) =
+  let xmlDoc = parseXMLDoc rspBody in
+  if rspStatus == status
   then
     maybe (Left "Unable to parse result") Right $ xmlDoc >>= parse
   else

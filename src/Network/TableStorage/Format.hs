@@ -3,7 +3,7 @@
 --
 
 module Network.TableStorage.Format (
-  getFormattedTime, rfc1123Date, atomDate,  
+  getFormattedTime, rfc1123Date, atomDate,
   rfc1123Format, atomDateFormat
 ) where
 

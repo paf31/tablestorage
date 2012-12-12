@@ -1,5 +1,5 @@
 -- |
--- Data types used to construct the various web method requests. 
+-- Data types used to construct the various web method requests.
 --
 module Network.TableStorage.Types (
   AccountKey(..),
@@ -12,11 +12,12 @@ module Network.TableStorage.Types (
   Entity(..),
   EntityQuery(..),
   ComparisonType(..),
-  EntityFilter(..)
+  EntityFilter(..),
+  QueryResponse(..)
 ) where
 
 import Data.Time ( UTCTime )
-import Network.HTTP.Base ( RequestMethod )
+import Network.HTTP.Types
 
 -- |
 -- The Base-64 encoded account secret key
@@ -24,32 +25,32 @@ import Network.HTTP.Base ( RequestMethod )
 newtype AccountKey = AccountKey { unAccountKey :: String } deriving (Show, Eq)
 
 -- |
--- The type of authorization header signatures 
+-- The type of authorization header signatures
 --
 newtype Signature = Signature { unSignature :: String } deriving (Show, Eq)
 
 -- |
--- The type of authorization headers 
+-- The type of authorization headers
 --
 newtype AuthHeader = AuthHeader { unAuthHeader :: String } deriving (Show, Eq)
 
 -- |
--- Account information: host, port, secret key and account name 
+-- Account information: host, port, secret key and account name
 --
-data Account = Account 
+data Account = Account
   { accountScheme         :: String
   , accountHost           :: String
   , accountPort           :: Int
   , accountKey            :: AccountKey
   , accountName           :: String
-  , accountResourcePrefix :: String 
+  , accountResourcePrefix :: String
   } deriving (Show, Eq)
 
 -- |
--- The unencrypted content of the Shared Key authorization header 
+-- The unencrypted content of the Shared Key authorization header
 --
-data SharedKeyAuth = SharedKeyAuth 
-  { sharedKeyAuthVerb                  :: RequestMethod
+data SharedKeyAuth = SharedKeyAuth
+  { sharedKeyAuthVerb                  :: Method
   , sharedKeyAuthContentMD5            :: String
   , sharedKeyAuthContentType           :: String
   , sharedKeyAuthDate                  :: String
@@ -57,21 +58,21 @@ data SharedKeyAuth = SharedKeyAuth
   } deriving (Show, Eq)
 
 -- |
--- Uniquely identifies an entity in a table : a partition key and row key pair. 
+-- Uniquely identifies an entity in a table : a partition key and row key pair.
 --
-data EntityKey = EntityKey 
+data EntityKey = EntityKey
   { ekPartitionKey :: String
-  , ekRowKey       :: String 
+  , ekRowKey       :: String
   } deriving (Show, Eq)
 
 -- |
 -- Represents a column in an entity.
--- 
+--
 -- The constructor used indicates the data type of the column represented.
 --
 -- For certain operations, the type must match the type of data stored in the table.
 --
-data EntityColumn = 
+data EntityColumn =
   EdmBinary (Maybe String) |
   EdmBoolean (Maybe Bool) |
   EdmDateTime (Maybe UTCTime) |
@@ -83,6 +84,11 @@ data EntityColumn =
   deriving (Show, Eq)
 
 -- |
+-- Exception handling type.
+--
+data QueryResponse = QueryResponse Status String
+
+-- |
 -- An entity consists of a key and zero or more additional columns.
 --
 data Entity = Entity { entityKey     :: EntityKey,
@@ -91,32 +97,32 @@ data Entity = Entity { entityKey     :: EntityKey,
 -- |
 -- An entity query consists of an optional filter and an optional number of entities to return.
 --
--- Projections are not currently supported. 
+-- Projections are not currently supported.
 --
-data EntityQuery = EntityQuery 
+data EntityQuery = EntityQuery
   { eqPageSize :: Maybe Int
-  , eqFilter   :: Maybe EntityFilter 
+  , eqFilter   :: Maybe EntityFilter
   } deriving (Show, Eq)
-                                 
+
 -- |
--- The various comparisons supported in entity queries. 
+-- The various comparisons supported in entity queries.
 --
-data ComparisonType = 
+data ComparisonType =
   Equal |
-  GreaterThan | 
-  GreaterThanOrEqual | 
+  GreaterThan |
+  GreaterThanOrEqual |
   LessThan |
-  LessThanOrEqual | 
-  NotEqual 
+  LessThanOrEqual |
+  NotEqual
   deriving (Show, Eq)
-                                 
+
 -- |
--- The data type of entity filters 
+-- The data type of entity filters
 --
-data EntityFilter = 
-  And [EntityFilter] | 
-  Or [EntityFilter] | 
-  Not EntityFilter | 
+data EntityFilter =
+  And [EntityFilter] |
+  Or [EntityFilter] |
+  Not EntityFilter |
   CompareBoolean String Bool |
   CompareDateTime String ComparisonType UTCTime |
   CompareDouble String ComparisonType Double |
