@@ -42,7 +42,7 @@ authenticationType = "SharedKey"
 -- Constructs the unencrypted content of the Shared Key authentication token
 --
 printSharedKeyAuth :: SharedKeyAuth -> String
-printSharedKeyAuth auth = (id >>= trace) $
+printSharedKeyAuth auth =
   (UTF8.toString $ sharedKeyAuthVerb auth)
   ++ "\n"
   ++ sharedKeyAuthContentMD5 auth
@@ -107,7 +107,7 @@ authenticatedRequest acc method hdrs resource canonicalizedResource body = withS
                            , sharedKeyAuthContentType = UTF8.toString atomType
                            , sharedKeyAuthDate = time
                            , sharedKeyAuthCanonicalizedResource = "/" ++ accountName acc ++ accountResourcePrefix acc ++ canonicalizedResource }
-  let uri = (show >>= trace) $ qualifyResource resource acc
+  let uri = qualifyResource resource acc
   let defaultReq = def  { method = method
                         , requestHeaders = [ (hAuthorization,          UTF8.fromString . unAuthHeader $ authHeader acc auth)
                                            , (hContentType,            atomType)
