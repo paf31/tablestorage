@@ -122,7 +122,6 @@ authenticatedRequest acc method hdrs resource canonicalizedResource body = withS
                         , requestBody = RequestBodyBS $ UTF8.fromString body
                         , redirectCount = 0
                         , checkStatus = \_ _ -> Nothing
-                        , proxy = Just $ Proxy "127.0.0.1" 8888
                         }
   request <- setUri defaultReq uri
   response <- withManager (httpLbs request)
