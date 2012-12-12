@@ -1,14 +1,14 @@
 name:           tablestorage
-version:        0.1.1.0
+version:        0.1.2.0
 cabal-version:  >= 1.2
 build-type:     Simple
-author:         Phil Freeman <paf31-at-cantab.net>
+author:         Phil Freeman, Aaron Friel
 stability:      experimental
 maintainer:     Phil Freeman <paf31@cantab.net>
 homepage:       http://github.com/paf31/tablestorage
 category:       Web, Database, API
 license:        BSD3
-copyright:      (c) Phil Freeman 2012
+copyright:      (c) Phil Freeman, Aaron Friel 2012
 data-files:     
                 LICENSE, 
                 tablestorage.cabal
