@@ -1,5 +1,5 @@
 name:           tablestorage
-version:        0.1.0.3
+version:        0.1.1.0
 cabal-version:  >= 1.2
 build-type:     Simple
 author:         Phil Freeman <paf31-at-cantab.net>
@@ -28,7 +28,10 @@ library
                    bytestring,
                    utf8-string,
                    base64-bytestring,
-                   HTTP,
+                   http-conduit,
+                   conduit,
+                   http-types,
+                   pureMD5,
                    network,
                    time,
                    xml,

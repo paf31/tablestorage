@@ -1,5 +1,5 @@
 -- |
--- Functions for constructing and parsing Atom feeds for use in the 
+-- Functions for constructing and parsing Atom feeds for use in the
 -- request and response bodies of the various web methods.
 --
 
@@ -15,10 +15,11 @@ import Network.TableStorage.Format ( atomDate )
 import Text.XML.Light
     ( Element(elAttribs, elContent, elName),
       Content(Elem),
-      QName,
+      QName, CDataKind(..), Content(..), CData(..),
       Attr(..),
       blank_element,
       unqual )
+import Data.Maybe (fromMaybe)
 
 atomNamespace :: String
 atomNamespace = "http://www.w3.org/2005/Atom"
@@ -46,7 +47,7 @@ atomElement name content attrs els  =
   blank_element { elName = qualifyAtom name,
                   elAttribs = attrs,
                   elContent = map Elem els ++ maybe [] cDataText content }
-     
+
 -- |
 -- An attribute in the Atom namespace
 --
@@ -58,28 +59,29 @@ atomAttr name value =
 -- |
 -- Create an Atom entry using the specified element as the content element
 --
-wrapContent :: Element -> IO Element
-wrapContent content = do
+wrapContent :: Maybe String -> Element -> IO Element
+wrapContent entityID content = do
   date <- atomDate
-  return $ atomElement "entry" Nothing 
-    [
-      Attr { attrKey = unqual "xmlns", attrVal = atomNamespace },
-      namespaceAttr "d" dataServicesNamespace,
-      namespaceAttr "m" metadataNamespace
-    ] 
-    [
-      atomElement "title" Nothing [] [],
-      atomElement "updated" (Just date) [] [],
-      atomElement "author" Nothing [] 
-      [
-        atomElement "name" Nothing [] []
-      ],
-      atomElement "id" Nothing [] [],
-      atomElement "content" Nothing 
-      [
-        atomAttr "type" "application/xml"
-      ] 
-      [ 
-        content 
+  return $
+    atomElement "entry" Nothing
+      [ Attr { attrKey = unqual "xmlns", attrVal = atomNamespace }
+      , namespaceAttr "d" dataServicesNamespace
+      , namespaceAttr "m" metadataNamespace
       ]
-   ]
+      [ atomElement "category" Nothing
+          [ atomAttr "scheme" "http://schemas.microsoft.com/ado/2007/08/dataservices/scheme"
+          , atomAttr "term" "clio.cookies"
+          ] []
+      , atomElement "title" Nothing [] []
+      , atomElement "author" Nothing []
+          [ atomElement "name" Nothing [] [] ]
+      , atomElement "updated" (Just date) [] []
+      , blank_element
+        { elName = qualifyAtom "id"
+        , elAttribs = []
+        , elContent = [Text CData { cdVerbatim = CDataRaw, cdData = fromMaybe "" entityID, cdLine = Nothing }]
+        }
+      , atomElement "content" Nothing
+          [ atomAttr "type" "application/xml" ]
+          [ content ]
+      ]
