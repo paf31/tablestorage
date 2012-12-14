@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- This module provides functions wrapping the Azure REST API web methods.
 

@@ -28,7 +28,7 @@ library
                    bytestring,
                    utf8-string,
                    base64-bytestring,
-                   http-conduit,
+                   http-conduit >= 1.8.5,
                    conduit,
                    http-types,
                    pureMD5,
@@ -36,7 +36,9 @@ library
                    time,
                    xml,
                    old-locale,
-                   mtl
+                   mtl,
+                   crypto-api,
+                   HTTP
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,
