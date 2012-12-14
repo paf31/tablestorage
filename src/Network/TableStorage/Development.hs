@@ -13,7 +13,7 @@ import Network.TableStorage.Types
 -- An account for the storage emulator
 --
 developmentAccount :: Account
-developmentAccount = Account { accountScheme            = "http",
+developmentAccount = Account { accountScheme            = "http:",
                                accountHost              = "127.0.0.1" ,
                                accountName              = "devstoreaccount1",
                                accountPort              = 10002,
