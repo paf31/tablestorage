@@ -38,7 +38,7 @@ library
                    old-locale,
                    mtl,
                    crypto-api,
-                   http
+                   HTTP
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,
