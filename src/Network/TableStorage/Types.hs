@@ -24,12 +24,14 @@ import Network.HTTP.Types
 import Network.HTTP.Conduit
 import Control.Monad.Reader
 import Control.Monad.Error
+import Control.Monad.Trans.Resource
 
-type TableStorage = ErrorT TableError (ReaderT TableConf IO)
+type TableStorage = ErrorT TableError (ReaderT TableConf (ResourceT IO))
 
 data TableConf = TableConf
-  { manager :: Maybe Manager
-  , account :: Account
+  { tableAccount :: Account
+  , httpManager :: Maybe Manager
+  , httpProxy   :: Maybe Proxy
   }
 
 -- |

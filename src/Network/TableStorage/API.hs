@@ -31,12 +31,13 @@ import Data.Time.Clock ( getCurrentTime )
 import Data.Maybe ( fromMaybe )
 import Control.Monad.Reader
 import Control.Monad.Error
+import Control.Monad.Trans.Resource
 
 -- |
 -- Runs TableStorage actions given a configuration
 --
 withTableStorage :: TableConf -> TableStorage a -> IO (Either TableError a)
-withTableStorage conf f = runReaderT (runErrorT f) conf
+withTableStorage conf f = runResourceT (runReaderT (runErrorT f) conf)
 
 -- |
 -- Simple helper function to convert non-monadic parser results into the monadic result
@@ -135,7 +136,7 @@ updateOrMergeEntity :: Method -> String -> Entity -> TableStorage ()
 updateOrMergeEntity method tableName entity = do
   let resource = entityKeyResource tableName $ entityKey entity
   let additionalHeaders = [ ("If-Match", "*") ]
-  (TableConf _ acc) <- ask
+  acc <- fmap tableAccount ask
   requestXml <- liftIO $ createInsertEntityXml entity (Just $
     accountScheme acc ++ "://" ++ accountHost acc ++ resource)
   response <- authenticatedRequest method additionalHeaders resource resource $ showTopElement requestXml
@@ -242,4 +243,4 @@ defaultAccount key name hostname = Account { accountScheme              = "http:
                                              accountResourcePrefix      = "" }
 
 defaultConf :: AccountKey -> String -> String -> TableConf
-defaultConf key name hostname = TableConf Nothing $ defaultAccount key name hostname
+defaultConf key name hostname = TableConf (defaultAccount key name hostname) Nothing Nothing

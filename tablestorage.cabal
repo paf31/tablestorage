@@ -1,5 +1,5 @@
 name:           tablestorage
-version:        0.2.0.0
+version:        0.2.1.0
 cabal-version:  >= 1.2
 build-type:     Simple
 author:         Phil Freeman, Aaron Friel
@@ -39,7 +39,8 @@ library
                    transformers,
                    crypto-api,
                    cryptohash,
-                   HTTP
+                   HTTP,
+                   resourcet
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,

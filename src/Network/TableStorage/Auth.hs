@@ -37,6 +37,7 @@ import Debug.Trace
 import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Resource
 
 authenticationType :: String
 authenticationType = "SharedKey"
@@ -103,7 +104,7 @@ qualifyResource res acc =
 authenticatedRequest :: Method -> [Header] -> String -> String -> String -> TableStorage QueryResponse
 authenticatedRequest method hdrs resource canonicalizedResource body = do
   time <- liftIO $ rfc1123Date
-  (TableConf mgr acc) <- ask
+  (TableConf acc maybeMgr maybeProxy) <- ask
   let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
   let atomType = "application/atom+xml" :: B.ByteString
   let auth = SharedKeyAuth { sharedKeyAuthVerb = method
@@ -126,7 +127,10 @@ authenticatedRequest method hdrs resource canonicalizedResource body = do
                         , requestBody = RequestBodyBS $ UTF8.fromString body
                         , redirectCount = 0
                         , checkStatus = \_ _ -> Nothing
+                        , proxy = maybeProxy
                         }
   request <- setUri defaultReq uri
-  response <- withManager (httpLbs request)
+  response <- case maybeMgr of
+                Just mgr -> runResourceT $ httpLbs request mgr
+                Nothing  -> withManager (httpLbs request)
   return $ QueryResponse (responseStatus response) (UTF8L.toString $ responseBody response)
