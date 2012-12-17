@@ -19,24 +19,19 @@ import qualified Data.ByteString.UTF8 as UTF8
     ( toString, fromString )
 import qualified Data.ByteString.Lazy.UTF8 as UTF8L ( fromString, toString )
 import qualified Data.ByteString.Lazy.Char8 as Char8L ( toChunks )
-import qualified Data.ByteString.Lazy as L ( ByteString, fromChunks )
-import qualified Crypto.Classes as Crypto ( encode )
+import qualified Data.ByteString.Lazy as L ( fromChunks )
 import Crypto.Hash.MD5 as MD5 (hash)
 import qualified Data.Digest.Pure.SHA as SHA
     ( bytestringDigest, hmacSha256 )
 import Network.URI
     ( URIAuth(URIAuth, uriPort, uriRegName, uriUserInfo), URI(..) )
-import Network.Socket.Internal (withSocketsDo)
 import Network.HTTP.Conduit
 import Network.HTTP.Conduit.Internal (setUri)
 import Network.HTTP.Types
 import Network.TableStorage.Types
 import Network.TableStorage.Format ( rfc1123Date )
 import Data.Monoid ((<>))
-import Debug.Trace
 import Control.Monad.Reader
-import Control.Monad.Error
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Resource
 
 authenticationType :: String
@@ -102,18 +97,18 @@ qualifyResource res acc =
 -- an error message or the response object.
 --
 authenticatedRequest :: Method -> [Header] -> String -> String -> String -> TableStorage QueryResponse
-authenticatedRequest method hdrs resource canonicalizedResource body = do
+authenticatedRequest mthd hdrs resource canonicalizedResource body = do
   time <- liftIO $ rfc1123Date
   (TableConf acc maybeMgr maybeProxy) <- ask
   let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
   let atomType = "application/atom+xml" :: B.ByteString
-  let auth = SharedKeyAuth { sharedKeyAuthVerb = method
+  let auth = SharedKeyAuth { sharedKeyAuthVerb = mthd
                            , sharedKeyAuthContentMD5 = UTF8.toString contentMD5
                            , sharedKeyAuthContentType = UTF8.toString atomType
                            , sharedKeyAuthDate = time
                            , sharedKeyAuthCanonicalizedResource = "/" ++ accountName acc ++ accountResourcePrefix acc ++ canonicalizedResource }
   let uri = qualifyResource resource acc
-  let defaultReq = def  { method = method
+  let defaultReq = def  { method = mthd
                         , requestHeaders = [ (hAuthorization,          UTF8.fromString . unAuthHeader $ authHeader acc auth)
                                            , (hContentType,            atomType)
                                            , (hContentMD5,             contentMD5)

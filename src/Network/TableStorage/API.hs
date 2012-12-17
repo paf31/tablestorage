@@ -25,8 +25,6 @@ import Network.TableStorage.Auth
 import Network.TableStorage.Request
 import Network.TableStorage.Response
 import Network.TableStorage.Atom
-import Control.Monad ( (>=>), unless )
-import Control.Monad.Error ( ErrorT(..) )
 import Data.Time.Clock ( getCurrentTime )
 import Data.Maybe ( fromMaybe )
 import Control.Monad.Reader

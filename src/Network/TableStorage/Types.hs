@@ -26,8 +26,14 @@ import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.Trans.Resource
 
+-- |
+-- Monad stack and return type of operations on azure tables
+--
 type TableStorage = ErrorT TableError (ReaderT TableConf (ResourceT IO))
 
+-- |
+-- TableStorage configuration data
+--
 data TableConf = TableConf
   { tableAccount :: Account
   , httpManager :: Maybe Manager

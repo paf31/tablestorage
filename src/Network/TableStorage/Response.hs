@@ -12,8 +12,6 @@ import Data.Time ( readTime )
 import System.Locale ( defaultTimeLocale )
 import Text.XML.Light
     ( Element(elName), parseXMLDoc, findChild, strContent )
-import Control.Monad ( guard )
-import Data.Maybe ( fromMaybe )
 import Network.TableStorage.Atom
 import Network.TableStorage.Types
 import Network.TableStorage.Format

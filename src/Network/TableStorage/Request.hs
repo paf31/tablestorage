@@ -18,7 +18,7 @@ import Data.Maybe ( fromMaybe )
 import Data.List ( intercalate )
 import Text.XML.Light.Types ( elAttribs )
 import Text.XML.Light
-    ( Element(elAttribs, elContent, elName),
+    ( Element(elContent, elName),
       Content(Elem),
       Attr(Attr),
       blank_element )
