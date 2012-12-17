@@ -31,13 +31,13 @@ library
                    http-conduit >= 1.8.5,
                    conduit,
                    http-types,
-                   pureMD5,
                    network,
                    time,
                    xml,
                    old-locale,
                    mtl,
                    crypto-api,
+                   cryptohash,
                    HTTP
   ghc-options:     -Wall
   exposed-modules: 

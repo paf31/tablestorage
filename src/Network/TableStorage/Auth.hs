@@ -21,7 +21,7 @@ import qualified Data.ByteString.Lazy.UTF8 as UTF8L ( fromString, toString )
 import qualified Data.ByteString.Lazy.Char8 as Char8L ( toChunks )
 import qualified Data.ByteString.Lazy as L ( ByteString(..), fromChunks )
 import qualified Crypto.Classes as Crypto ( encode )
-import Data.Digest.Pure.MD5 as MD5 (md5)
+import Crypto.Hash.MD5 as MD5 (hash)
 import qualified Data.Digest.Pure.SHA as SHA
     ( bytestringDigest, hmacSha256 )
 import Network.URI
@@ -100,7 +100,7 @@ qualifyResource res acc =
 authenticatedRequest :: Account -> Method -> [Header] -> String -> String -> String -> IO QueryResponse
 authenticatedRequest acc method hdrs resource canonicalizedResource body = withSocketsDo $ do
   time <- rfc1123Date
-  let contentMD5 =  (Base64C.encode . Crypto.encode . md5 . UTF8L.fromString) body
+  let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
   let atomType = "application/atom+xml" :: B.ByteString
   let auth = SharedKeyAuth { sharedKeyAuthVerb = method
                            , sharedKeyAuthContentMD5 = UTF8.toString contentMD5
