@@ -100,18 +100,11 @@ qualifyResource res acc =
 -- resource, canonicalized resource and request body as parameters, and returns
 -- an error message or the response object.
 --
-<<<<<<< HEAD
-authenticatedRequest :: Account -> Method -> [Header] -> String -> String -> String -> IO QueryResponse
-authenticatedRequest acc method hdrs resource canonicalizedResource body = withSocketsDo $ do
-  time <- rfc1123Date
-  let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
-=======
 authenticatedRequest :: Method -> [Header] -> String -> String -> String -> TableStorage QueryResponse
 authenticatedRequest method hdrs resource canonicalizedResource body = do
   time <- liftIO $ rfc1123Date
   (TableConf mgr acc) <- ask
-  let contentMD5 =  (Base64C.encode . Crypto.encode . md5 . UTF8L.fromString) body
->>>>>>> API with ReaderT and ErrorT
+  let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
   let atomType = "application/atom+xml" :: B.ByteString
   let auth = SharedKeyAuth { sharedKeyAuthVerb = method
                            , sharedKeyAuthContentMD5 = UTF8.toString contentMD5
