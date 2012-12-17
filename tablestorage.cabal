@@ -36,6 +36,7 @@ library
                    xml,
                    old-locale,
                    mtl,
+                   transformers,
                    crypto-api,
                    cryptohash,
                    HTTP

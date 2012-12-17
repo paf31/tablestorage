@@ -13,11 +13,40 @@ module Network.TableStorage.Types (
   EntityQuery(..),
   ComparisonType(..),
   EntityFilter(..),
-  QueryResponse(..)
+  QueryResponse(..),
+  TableStorage,
+  TableConf(..),
+  TableError(..)
 ) where
 
 import Data.Time ( UTCTime )
 import Network.HTTP.Types
+import Network.HTTP.Conduit
+import Control.Monad.Reader
+import Control.Monad.Error
+
+type TableStorage = ErrorT TableError (ReaderT TableConf IO)
+
+data TableConf = TableConf
+  { manager :: Maybe Manager
+  , account :: Account
+  }
+
+-- |
+-- Error type
+--
+data TableError = TableParseError
+                | TableUnknownError
+                | TableOtherError String
+
+instance Error TableError where
+  noMsg    = TableUnknownError
+  strMsg s = TableOtherError s
+
+instance Show TableError where
+  show TableParseError = "Unable to parse result"
+  show TableUnknownError = "Unknown table storage error"
+  show (TableOtherError msg) = msg
 
 -- |
 -- The Base-64 encoded account secret key

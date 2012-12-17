@@ -14,12 +14,12 @@ module Network.TableStorage.Auth (
 import qualified Data.ByteString.Base64 as Base64C
     ( encode, decode )
 import qualified Codec.Binary.UTF8.String as UTF8C ( encodeString )
-import qualified Data.ByteString as B ( ByteString(..), concat )
+import qualified Data.ByteString as B ( ByteString, concat )
 import qualified Data.ByteString.UTF8 as UTF8
     ( toString, fromString )
 import qualified Data.ByteString.Lazy.UTF8 as UTF8L ( fromString, toString )
 import qualified Data.ByteString.Lazy.Char8 as Char8L ( toChunks )
-import qualified Data.ByteString.Lazy as L ( ByteString(..), fromChunks )
+import qualified Data.ByteString.Lazy as L ( ByteString, fromChunks )
 import qualified Crypto.Classes as Crypto ( encode )
 import Crypto.Hash.MD5 as MD5 (hash)
 import qualified Data.Digest.Pure.SHA as SHA
@@ -34,6 +34,9 @@ import Network.TableStorage.Types
 import Network.TableStorage.Format ( rfc1123Date )
 import Data.Monoid ((<>))
 import Debug.Trace
+import Control.Monad.Reader
+import Control.Monad.Error
+import Control.Monad.IO.Class
 
 authenticationType :: String
 authenticationType = "SharedKey"
@@ -97,10 +100,18 @@ qualifyResource res acc =
 -- resource, canonicalized resource and request body as parameters, and returns
 -- an error message or the response object.
 --
+<<<<<<< HEAD
 authenticatedRequest :: Account -> Method -> [Header] -> String -> String -> String -> IO QueryResponse
 authenticatedRequest acc method hdrs resource canonicalizedResource body = withSocketsDo $ do
   time <- rfc1123Date
   let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
+=======
+authenticatedRequest :: Method -> [Header] -> String -> String -> String -> TableStorage QueryResponse
+authenticatedRequest method hdrs resource canonicalizedResource body = do
+  time <- liftIO $ rfc1123Date
+  (TableConf mgr acc) <- ask
+  let contentMD5 =  (Base64C.encode . Crypto.encode . md5 . UTF8L.fromString) body
+>>>>>>> API with ReaderT and ErrorT
   let atomType = "application/atom+xml" :: B.ByteString
   let auth = SharedKeyAuth { sharedKeyAuthVerb = method
                            , sharedKeyAuthContentMD5 = UTF8.toString contentMD5
