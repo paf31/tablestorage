@@ -1,5 +1,5 @@
 name:           tablestorage
-version:        0.1.2.0
+version:        0.2.1.0
 cabal-version:  >= 1.2
 build-type:     Simple
 author:         Phil Freeman, Aaron Friel
@@ -21,6 +21,7 @@ description:
                 Pagination and projections are currently not supported.
 
 library
+  ghc-options:     -W -Wall
   hs-source-dirs:  src
   build-depends:   
                    base >= 4 && < 5,
@@ -31,14 +32,16 @@ library
                    http-conduit >= 1.8.5,
                    conduit,
                    http-types,
-                   pureMD5,
                    network,
                    time,
                    xml,
                    old-locale,
                    mtl,
+                   transformers,
                    crypto-api,
-                   HTTP
+                   cryptohash,
+                   HTTP,
+                   resourcet
   ghc-options:     -Wall
   exposed-modules: 
                    Network.TableStorage,
