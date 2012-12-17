@@ -24,12 +24,11 @@ import Network.HTTP.Types
 import Network.HTTP.Conduit
 import Control.Monad.Reader
 import Control.Monad.Error
-import Control.Monad.Trans.Resource
 
 -- |
 -- Monad stack and return type of operations on azure tables
 --
-type TableStorage = ErrorT TableError (ReaderT TableConf (ResourceT IO))
+type TableStorage = ErrorT TableError (ReaderT TableConf IO)
 
 -- |
 -- TableStorage configuration data

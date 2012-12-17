@@ -35,7 +35,7 @@ import Control.Monad.Trans.Resource
 -- Runs TableStorage actions given a configuration
 --
 withTableStorage :: TableConf -> TableStorage a -> IO (Either TableError a)
-withTableStorage conf f = runResourceT (runReaderT (runErrorT f) conf)
+withTableStorage conf f = (runReaderT (runErrorT f) conf)
 
 -- |
 -- Simple helper function to convert non-monadic parser results into the monadic result
