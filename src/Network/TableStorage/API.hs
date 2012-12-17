@@ -3,7 +3,7 @@
 -- This module provides functions wrapping the Azure REST API web methods.
 
 module Network.TableStorage.API (
-  -- withTableStorage,
+  withTableStorage,
   queryTables, createTable, createTableIfNecessary, deleteTable,
   insertEntity, updateEntity, mergeEntity, deleteEntity,
   queryEntity, queryEntities, defaultEntityQuery,
@@ -32,6 +32,9 @@ import Data.Maybe ( fromMaybe )
 import Control.Monad.Reader
 import Control.Monad.Error
 
+-- |
+-- Runs TableStorage actions given a configuration
+--
 withTableStorage :: TableConf -> TableStorage a -> IO (Either TableError a)
 withTableStorage conf f = runReaderT (runErrorT f) conf
 
