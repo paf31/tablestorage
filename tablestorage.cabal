@@ -1,5 +1,5 @@
 name:           tablestorage
-version:        0.1.2.1
+version:        0.2.0.0
 cabal-version:  >= 1.2
 build-type:     Simple
 author:         Phil Freeman, Aaron Friel
