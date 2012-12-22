@@ -27,15 +27,15 @@ import Network.TableStorage.Response
 import Network.TableStorage.Atom
 import Data.Time.Clock ( getCurrentTime )
 import Data.Maybe ( fromMaybe )
+import Control.Monad ( unless )
 import Control.Monad.Reader
 import Control.Monad.Error
-import Control.Monad.Trans.Resource
 
 -- |
 -- Runs TableStorage actions given a configuration
 --
 withTableStorage :: TableConf -> TableStorage a -> IO (Either TableError a)
-withTableStorage conf f = (runReaderT (runErrorT f) conf)
+withTableStorage conf f = runReaderT (runErrorT f) conf
 
 -- |
 -- Simple helper function to convert non-monadic parser results into the monadic result
@@ -91,9 +91,7 @@ createTable tableName = do
 createTableIfNecessary :: String -> TableStorage ()
 createTableIfNecessary tableName = do
   tables <- queryTables
-  if (tableName `elem` tables)
-    then return ()
-    else createTable tableName
+  unless (tableName `elem` tables) $ createTable tableName
 
 -- |
 -- Deletes the table with the specified name or returns an error message
@@ -150,7 +148,7 @@ updateEntity = updateOrMergeEntity methodPut
 -- Merges the specified entity (without removing columns) or returns an error message
 --
 mergeEntity :: String -> Entity -> TableStorage ()
-mergeEntity = updateOrMergeEntity ("MERGE")
+mergeEntity = updateOrMergeEntity "MERGE"
 
 -- |
 -- Deletes the entity with the specified key or returns an error message

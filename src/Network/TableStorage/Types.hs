@@ -47,8 +47,8 @@ data TableError = TableParseError
                 | TableOtherError String
 
 instance Error TableError where
-  noMsg    = TableUnknownError
-  strMsg s = TableOtherError s
+  noMsg  = TableUnknownError
+  strMsg = TableOtherError
 
 instance Show TableError where
   show TableParseError = "Unable to parse result"

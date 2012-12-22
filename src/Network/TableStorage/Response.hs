@@ -41,7 +41,7 @@ parseEmptyResponse status (QueryResponse rspStatus rspBody) =
   then
     Right ()
   else
-    Left $ parseError $ parseXMLDoc (rspBody)
+    Left $ parseError $ parseXMLDoc rspBody
 
 -- |
 -- Parse an XML response, or an error response as appropriate.

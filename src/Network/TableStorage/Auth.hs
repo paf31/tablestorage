@@ -42,7 +42,7 @@ authenticationType = "SharedKey"
 --
 printSharedKeyAuth :: SharedKeyAuth -> String
 printSharedKeyAuth auth =
-  (UTF8.toString $ sharedKeyAuthVerb auth)
+  UTF8.toString (sharedKeyAuthVerb auth)
   ++ "\n"
   ++ sharedKeyAuthContentMD5 auth
   ++ "\n"
@@ -98,7 +98,7 @@ qualifyResource res acc =
 --
 authenticatedRequest :: Method -> [Header] -> String -> String -> String -> TableStorage QueryResponse
 authenticatedRequest mthd hdrs resource canonicalizedResource body = do
-  time <- liftIO $ rfc1123Date
+  time <- liftIO rfc1123Date
   (TableConf acc maybeMgr maybeProxy) <- ask
   let contentMD5 =  (Base64C.encode . hash . UTF8.fromString) body
   let atomType = "application/atom+xml" :: B.ByteString
@@ -113,8 +113,8 @@ authenticatedRequest mthd hdrs resource canonicalizedResource body = do
                                            , (hContentType,            atomType)
                                            , (hContentMD5,             contentMD5)
                                            , (hAccept,                 atomType <> ",application/xml")
-                                           , (hDate,                   UTF8.fromString $ time)
-                                           , ("x-ms-date",             UTF8.fromString $ time)
+                                           , (hDate,                   UTF8.fromString time)
+                                           , ("x-ms-date",             UTF8.fromString time)
                                            , ("x-ms-version",          "2009-09-19")
                                            , ("DataServiceVersion",    "1.0;NetFx")
                                            , ("MaxDataServiceVersion", "2.0;NetFx")
