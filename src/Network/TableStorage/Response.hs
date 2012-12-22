@@ -12,44 +12,48 @@ import Data.Time ( readTime )
 import System.Locale ( defaultTimeLocale )
 import Text.XML.Light
     ( Element(elName), parseXMLDoc, findChild, strContent )
-import Control.Monad ( guard )
-import Data.Maybe ( fromMaybe )
 import Network.TableStorage.Atom
 import Network.TableStorage.Types
 import Network.TableStorage.Format
 import Network.HTTP.Types
+import Control.Monad.Error
 
 -- |
 -- Extracts the error message from an error response
 --
-parseError :: Element -> Maybe String
-parseError root = do
+parseErrorMaybe :: Element -> Maybe String
+parseErrorMaybe root = do
   guard $ qualifyMetadata "error" == elName root
   message <- findChild (qualifyMetadata "message") root
   return $ strContent message
 
+parseError :: Maybe Element -> TableError
+parseError e = case e >>= parseErrorMaybe of
+                Nothing -> TableUnknownError
+                Just s  -> TableOtherError s
+
 -- |
 -- Verifies a response status, parsing an error message if necessary.
 --
-parseEmptyResponse :: Status -> QueryResponse -> Either String ()
+parseEmptyResponse :: Status -> QueryResponse -> Either TableError ()
 parseEmptyResponse status (QueryResponse rspStatus rspBody) =
   if rspStatus == status
   then
     Right ()
   else
-    Left $ fromMaybe "Unknown error" (parseXMLDoc (rspBody) >>= parseError)
+    Left $ parseError $ parseXMLDoc (rspBody)
 
 -- |
 -- Parse an XML response, or an error response as appropriate.
 --
-parseXmlResponseOrError :: Status -> (Element -> Maybe a) -> QueryResponse -> Either String a
+parseXmlResponseOrError :: Status -> (Element -> Maybe a) -> QueryResponse -> Either TableError a
 parseXmlResponseOrError status parse (QueryResponse rspStatus rspBody) =
   let xmlDoc = parseXMLDoc rspBody in
   if rspStatus == status
   then
-    maybe (Left "Unable to parse result") Right $ xmlDoc >>= parse
+    maybe (Left TableUnknownError) Right $ xmlDoc >>= parse
   else
-    Left $ fromMaybe "Unknown error" (xmlDoc >>= parseError)
+    Left $ parseError xmlDoc
 
 -- |
 -- Parses an entity column type and value

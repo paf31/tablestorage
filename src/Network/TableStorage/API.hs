@@ -3,10 +3,11 @@
 -- This module provides functions wrapping the Azure REST API web methods.
 
 module Network.TableStorage.API (
+  withTableStorage,
   queryTables, createTable, createTableIfNecessary, deleteTable,
   insertEntity, updateEntity, mergeEntity, deleteEntity,
   queryEntity, queryEntities, defaultEntityQuery,
-  defaultAccount
+  defaultAccount, defaultConf
 ) where
 
 import Network.HTTP.Types
@@ -24,15 +25,30 @@ import Network.TableStorage.Auth
 import Network.TableStorage.Request
 import Network.TableStorage.Response
 import Network.TableStorage.Atom
-import Control.Monad ( (>=>), unless )
-import Control.Monad.Error ( ErrorT(..) )
 import Data.Time.Clock ( getCurrentTime )
 import Data.Maybe ( fromMaybe )
+import Control.Monad.Reader
+import Control.Monad.Error
+import Control.Monad.Trans.Resource
+
+-- |
+-- Runs TableStorage actions given a configuration
+--
+withTableStorage :: TableConf -> TableStorage a -> IO (Either TableError a)
+withTableStorage conf f = (runReaderT (runErrorT f) conf)
+
+-- |
+-- Simple helper function to convert non-monadic parser results into the monadic result
+--
+fromEither :: MonadError e m => Either e a -> m a
+fromEither (Left e) = throwError e
+fromEither (Right a) = return a
+{-# INLINE fromEither #-}
 
 -- |
 -- Parse the response body of the Query Tables web method
 --
-parseQueryTablesResponse :: QueryResponse -> Either String [String]
+parseQueryTablesResponse :: QueryResponse -> Either TableError [String]
 parseQueryTablesResponse = parseXmlResponseOrError status200 readTables where
   readTables :: Element -> Maybe [String]
   readTables feed = sequence $ do
@@ -47,11 +63,11 @@ parseQueryTablesResponse = parseXmlResponseOrError status200 readTables where
 -- |
 -- List the names of tables for an account or returns an error message
 --
-queryTables :: Account -> IO (Either String [String])
-queryTables acc = do
+queryTables :: TableStorage [String]
+queryTables = do
   let resource = "/Tables"
-  response <- authenticatedRequest acc methodGet [] resource resource ""
-  return $ parseQueryTablesResponse response
+  response <- authenticatedRequest methodGet [] resource resource ""
+  fromEither $ parseQueryTablesResponse response
 
 -- |
 -- Construct the request body for the Create Table web method
@@ -62,29 +78,31 @@ createTableXml tableName = wrapContent Nothing $ propertyList [("TableName", Edm
 -- |
 -- Creates a new table with the specified name or returns an error message
 --
-createTable :: Account -> String -> IO (Either String ())
-createTable acc tableName = do
+createTable :: String -> TableStorage ()
+createTable tableName = do
   let resource = "/Tables"
-  requestXml <- createTableXml tableName
-  response <- authenticatedRequest acc methodPost [] resource resource $ showTopElement requestXml
-  return $ parseEmptyResponse status201 response
+  requestXml <- liftIO $ createTableXml tableName
+  response <- authenticatedRequest methodPost [] resource resource $ showTopElement requestXml
+  fromEither $ parseEmptyResponse status201 response
 
 -- |
 -- Creates a new table with the specified name if it does not already exist, or returns an erro message
 --
-createTableIfNecessary :: Account -> String -> IO (Either String ())
-createTableIfNecessary acc tableName = runErrorT $ do
-  tables <- ErrorT $ queryTables acc
-  unless (tableName `elem` tables) $ ErrorT $ createTable acc tableName
+createTableIfNecessary :: String -> TableStorage ()
+createTableIfNecessary tableName = do
+  tables <- queryTables
+  if (tableName `elem` tables)
+    then return ()
+    else createTable tableName
 
 -- |
 -- Deletes the table with the specified name or returns an error message
 --
-deleteTable :: Account -> String -> IO (Either String ())
-deleteTable acc tableName = do
+deleteTable :: String -> TableStorage ()
+deleteTable tableName = do
   let resource = "/Tables('" ++ tableName ++ "')"
-  response <- authenticatedRequest acc methodDelete [] resource resource ""
-  return $ parseEmptyResponse status204 response
+  response <- authenticatedRequest methodDelete [] resource resource ""
+  fromEither $ parseEmptyResponse status204 response
 
 -- |
 -- Construct the request body for the Insert Entity web method
@@ -101,47 +119,48 @@ createInsertEntityXml entity entityID = do
 -- |
 -- Inserts an entity into the table with the specified name or returns an error message
 --
-insertEntity :: Account -> String -> Entity -> IO (Either String ())
-insertEntity acc tableName entity = do
+insertEntity :: String -> Entity -> TableStorage ()
+insertEntity tableName entity = do
   let resource = '/' : tableName
-  requestXml <- createInsertEntityXml entity Nothing
-  response <- authenticatedRequest acc methodPost [] resource resource $ showTopElement requestXml
-  return $ parseEmptyResponse status201 response
+  requestXml <- liftIO $ createInsertEntityXml entity Nothing
+  response <- authenticatedRequest methodPost [] resource resource $ showTopElement requestXml
+  fromEither $ parseEmptyResponse status201 response
 
 -- |
 -- Shared method to update or merge an existing entity. The only difference between the
 -- two methods is the request method used.
 --
-updateOrMergeEntity :: Method -> Account -> String -> Entity -> IO (Either String ())
-updateOrMergeEntity method acc tableName entity = do
+updateOrMergeEntity :: Method -> String -> Entity -> TableStorage ()
+updateOrMergeEntity method tableName entity = do
   let resource = entityKeyResource tableName $ entityKey entity
   let additionalHeaders = [ ("If-Match", "*") ]
-  requestXml <- createInsertEntityXml entity (Just $
+  acc <- fmap tableAccount ask
+  requestXml <- liftIO $ createInsertEntityXml entity (Just $
     accountScheme acc ++ "://" ++ accountHost acc ++ resource)
-  response <- authenticatedRequest acc method additionalHeaders resource resource $ showTopElement requestXml
-  return $ parseEmptyResponse status204 response
+  response <- authenticatedRequest method additionalHeaders resource resource $ showTopElement requestXml
+  fromEither $ parseEmptyResponse status204 response
 
 -- |
 -- Updates the specified entity (possibly removing columns) or returns an error message
 --
-updateEntity :: Account -> String -> Entity -> IO (Either String ())
+updateEntity :: String -> Entity -> TableStorage ()
 updateEntity = updateOrMergeEntity methodPut
 
 -- |
 -- Merges the specified entity (without removing columns) or returns an error message
 --
-mergeEntity :: Account -> String -> Entity -> IO (Either String ())
+mergeEntity :: String -> Entity -> TableStorage ()
 mergeEntity = updateOrMergeEntity ("MERGE")
 
 -- |
 -- Deletes the entity with the specified key or returns an error message
 --
-deleteEntity :: Account -> String -> EntityKey -> IO (Either String ())
-deleteEntity acc tableName key = do
+deleteEntity :: String -> EntityKey -> TableStorage ()
+deleteEntity tableName key = do
   let resource = entityKeyResource tableName key
   let additionalHeaders = [ ("If-Match", "*") ]
-  response <- authenticatedRequest acc methodDelete additionalHeaders resource resource ""
-  return $ parseEmptyResponse status204 response
+  response <- authenticatedRequest methodDelete additionalHeaders resource resource ""
+  fromEither $ parseEmptyResponse status204 response
 
 -- |
 -- Parse an Atom entry as an entity
@@ -171,22 +190,22 @@ readEntity entry = do
 -- |
 -- Parse the response body of the Query Entity web method
 --
-parseQueryEntityResponse :: QueryResponse -> Either String Entity
-parseQueryEntityResponse = parseXmlResponseOrError status200 readEntity where
+parseQueryEntityResponse :: QueryResponse -> Either TableError Entity
+parseQueryEntityResponse = parseXmlResponseOrError status200 readEntity
 
 -- |
 -- Returns the entity with the specified table name and key or an error message
 --
-queryEntity :: Account -> String -> EntityKey -> IO (Either String Entity)
-queryEntity acc tableName key = do
+queryEntity :: String -> EntityKey -> TableStorage Entity
+queryEntity tableName key = do
   let resource = entityKeyResource tableName key
-  response <- authenticatedRequest acc methodGet [] resource resource ""
-  return $ parseQueryEntityResponse response
+  response <- authenticatedRequest methodGet [] resource resource ""
+  fromEither $ parseQueryEntityResponse response
 
 -- |
 -- Parse the response body of the Query Entities web method
 --
-parseQueryEntitiesResponse :: QueryResponse -> Either String [Entity]
+parseQueryEntitiesResponse :: QueryResponse -> Either TableError [Entity]
 parseQueryEntitiesResponse = parseXmlResponseOrError status200 readEntities where
   readEntities :: Element -> Maybe [Entity]
   readEntities feed = sequence $ do
@@ -196,13 +215,13 @@ parseQueryEntitiesResponse = parseXmlResponseOrError status200 readEntities wher
 -- |
 -- Returns a collection of entities by executing the specified query or returns an error message
 --
-queryEntities :: Account -> String -> EntityQuery -> IO (Either String [Entity])
-queryEntities acc tableName query = do
+queryEntities :: String -> EntityQuery -> TableStorage [Entity]
+queryEntities tableName query = do
   let canonicalizedResource = '/' : tableName ++ "()"
   let queryString = buildQueryString query
   let resource = canonicalizedResource ++ '?' : queryString
-  response <- authenticatedRequest acc methodGet [] resource canonicalizedResource ""
-  return $ parseQueryEntitiesResponse response
+  response <- authenticatedRequest methodGet [] resource canonicalizedResource ""
+  fromEither $ parseQueryEntitiesResponse response
 
 -- |
 -- An empty query with no filters and no specified page size
@@ -220,3 +239,6 @@ defaultAccount key name hostname = Account { accountScheme              = "http:
                                              accountKey                 = key,
                                              accountName                = name,
                                              accountResourcePrefix      = "" }
+
+defaultConf :: AccountKey -> String -> String -> TableConf
+defaultConf key name hostname = TableConf (defaultAccount key name hostname) Nothing Nothing
