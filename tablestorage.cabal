@@ -12,7 +12,7 @@ copyright:      (c) Phil Freeman, Aaron Friel 2012
 data-files:     
                 LICENSE, 
                 tablestorage.cabal
-tested-with:    GHC==7.0.4
+tested-with:    GHC==7.6.3
 license-file:   LICENSE
 synopsis:       Azure Table Storage REST API Wrapper
 description:    
