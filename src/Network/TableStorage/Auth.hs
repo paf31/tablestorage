@@ -121,7 +121,7 @@ authenticatedRequest mthd hdrs resource canonicalizedResource body = do
                                            ] ++ hdrs
                         , requestBody = RequestBodyBS $ UTF8.fromString body
                         , redirectCount = 0
-                        , checkStatus = \_ _ -> Nothing
+                        , checkStatus = \_ _ _ -> Nothing
                         , proxy = maybeProxy
                         }
   request <- setUri defaultReq uri
