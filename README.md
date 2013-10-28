@@ -1,6 +1,8 @@
 tablestorage-0.2.1
 ==================
 
+[![Build Status](https://secure.travis-ci.org/paf31/tablestorage.png?branch=master)](http://travis-ci.org/paf31/tablestorage)
+
 A Haskell wrapper for the Azure Table Storage REST API.
 
 Currently supports table and entity operations, but not pagination and projections.
